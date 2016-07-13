@@ -43,6 +43,16 @@ func (h *httpGoodbyeHandler) Goodbye(w http.ResponseWriter, r *http.Request) {
 	w.Write(res)
 }
 
+func (s *ServiceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path
+	switch path {
+	case "/hello":
+		s.Hello(w, r)
+	case "/goodbye":
+		s.Goodbye(w, r)
+	}
+}
+
 func getServiceHandler(hello helloHandler, goodbye goodbyeHandler) *ServiceHandler {
 	result := &ServiceHandler{helloHandler: hello, goodbyeHandler: goodbye}
 	return result
@@ -52,10 +62,7 @@ func main() {
 
 	goodbyeHandler := &httpGoodbyeHandler{}
 	helloHandler := &httpHelloHandler{}
-	serviceHandler := getServiceHandler(helloHandler, goodbyeHandler)
+	service := getServiceHandler(helloHandler, goodbyeHandler)
 
-	http.HandleFunc("/hello", serviceHandler.Hello)
-	http.HandleFunc("/goodbye", serviceHandler.Goodbye)
-
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8080", service)
 }

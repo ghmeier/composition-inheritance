@@ -11,21 +11,25 @@ type handler interface {
 	process(params interface{}) (res interface{}, err error)
 }
 
+type baseHandler struct {
+	handler
+}
+
 type helloHandler struct {
-	*handler
+	*baseHandler
 }
 
 type goodbyeHandler struct {
-	*handler
+	*baseHandler
 }
 
 type ServiceHandler struct{}
 
-func (h *handler) validate(params interface{}) (err error) {
+func (h *baseHandler) validate(params interface{}) (err error) {
 	return nil
 }
 
-func (h *handler) prepare(params interface{}) (err error) {
+func (h *baseHandler) prepare(params interface{}) (err error) {
 	return nil
 }
 
@@ -35,6 +39,16 @@ func (h *helloHandler) process(params interface{}) (interface{}, error) {
 
 func (h *goodbyeHandler) process(params interface{}) (interface{}, error) {
 	return "Peace Out", nil
+}
+
+func (s *ServiceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path
+	switch path {
+	case "/hello":
+		s.Hello(w, r)
+	case "/goodbye":
+		s.Goodbye(w, r)
+	}
 }
 
 func (s *ServiceHandler) Hello(w http.ResponseWriter, r *http.Request) {
@@ -48,12 +62,12 @@ func (s *ServiceHandler) Goodbye(w http.ResponseWriter, r *http.Request) {
 }
 
 func newHelloHandler() *helloHandler {
-	result := &helloHandler{handler: new(handler)}
+	result := &helloHandler{baseHandler: new(baseHandler)}
 	return result
 }
 
 func newGoodbyeHandler() *goodbyeHandler {
-	result := &goodbyeHandler{handler: new(handler)}
+	result := &goodbyeHandler{baseHandler: new(baseHandler)}
 	return result
 }
 
@@ -81,8 +95,5 @@ func (s *ServiceHandler) handle(w http.ResponseWriter, r *http.Request, handler 
 
 func main() {
 	service := new(ServiceHandler)
-	http.HandleFunc("/hello", service.Hello)
-	http.HandleFunc("/goodbye", service.Goodbye)
-
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8080", service)
 }
